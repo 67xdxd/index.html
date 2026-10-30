@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HERO CLASH 3D — MHA Arena</title>
+<style>
+:root{--cyan:#39e7ff;--pink:#ff3e78;--gold:#ffd45c;--panel:rgba(8,13,29,.88)}
+*{box-sizing:border-box}body{margin:0;background:#050813;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+#game{position:fixed;inset:0}canvas{display:block}
+.panel{background:var(--panel);border:1px solid rgba(91,220,255,.38);box-shadow:0 0 25px #00c8ff22,inset 0 0 20px #132d4a66;border-radius:15px;backdrop-filter:blur(10px)}
+#top{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(780px,94vw);display:flex;align-items:center;justify-content:space-between;padding:10px 16px;pointer-events:none}
+.logo{font-weight:1000;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 14px #00cfff;font-size:18px}.stage{font-size:11px;color:#b7c6e6;letter-spacing:2px}
+#hud{position:absolute;top:72px;left:3vw;right:3vw;display:flex;justify-content:space-between;gap:18px;pointer-events:none}
+.fighter{width:min(330px,42vw);padding:10px 13px}.fighter.right{text-align:right}
+.name{font-weight:900;letter-spacing:1px;font-size:17px}.sub{font-size:10px;color:#9eb2d5;margin:3px 0 8px}
+.bar{height:13px;background:#242b3e;border:1px solid #66718d;border-radius:20px;overflow:hidden}.fill{height:100%;width:100%;background:linear-gradient(90deg,#19e6a0,#a9ff62);transition:width .2s}
+#enemyHealth{background:linear-gradient(90deg,#ff386a,#ff9b5a);float:right}
+.ultbar{height:5px;background:#242b3e;margin-top:6px;border-radius:8px;overflow:hidden}.ultfill{height:100%;width:0;background:linear-gradient(90deg,#7c4dff,#f34dff)}
+#centerInfo{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);font-size:clamp(24px,5vw,52px);font-weight:1000;text-align:center;text-shadow:0 0 20px #000;pointer-events:none;opacity:0;transition:opacity .25s}
+#bottom{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:min(900px,96vw);padding:10px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.ability{position:relative;min-width:86px;flex:1;max-width:130px;min-height:58px;padding:7px 6px;border-radius:10px;border:1px solid #4c739c;background:linear-gradient(145deg,#172743,#0a1020);color:white;font-weight:800;cursor:pointer;box-shadow:0 4px 0 #030711,0 0 12px #00baff18;transition:.12s}
+.ability:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 0 16px #00cfff55}.ability:active{transform:translateY(2px);box-shadow:none}
+.ability small{display:block;color:#9db7d9;font-size:9px;margin-top:4px;font-weight:600}.key{position:absolute;top:4px;right:6px;color:var(--gold);font-size:10px}
+.ability.ult{border-color:#b24bff;background:linear-gradient(145deg,#371957,#15102b)}.ability.ult small{color:#d6aaff}
+#controls{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);font-size:11px;color:#b5c4dc;text-align:center;text-shadow:0 2px 4px #000;white-space:nowrap}
+#select{position:absolute;inset:0;background:radial-gradient(ellipse at center,#172746ee,#030611f7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+#selectBox{width:min(900px,96vw);max-height:94vh;overflow:auto;padding:22px}
+h1{margin:0;color:var(--cyan);letter-spacing:4px;text-align:center;font-size:clamp(24px,5vw,42px);text-shadow:0 0 18px #00cfff88}
+.intro{text-align:center;color:#b9cbe7;font-size:13px;margin:8px 0 18px}
+#roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.char{border:1px solid #385578;background:linear-gradient(145deg,#14243d,#080e1e);border-radius:12px;padding:12px 8px;color:#fff;cursor:pointer;text-align:center;transition:.15s}
+.char:hover,.char.selected{border-color:var(--cyan);box-shadow:0 0 18px #00cfff55;transform:translateY(-2px)}
+.portrait{height:68px;display:grid;place-items:center;font-size:42px;filter:drop-shadow(0 0 10px #49dfff88)}
+.char b{display:block;font-size:13px;margin-top:4px}.char small{color:#9eb6d6;font-size:10px}
+#start{display:block;margin:18px auto 0;border:0;border-radius:10px;padding:13px 34px;background:linear-gradient(90deg,#00bde9,#645bff);color:white;font-size:15px;font-weight:1000;letter-spacing:2px;cursor:pointer;box-shadow:0 0 22px #00cfff55}
+#start:disabled{opacity:.35;cursor:not-allowed}
+#mobile{display:none;position:absolute;bottom:95px;left:12px;right:12px;justify-content:space-between;pointer-events:none}
+.pad{display:grid;grid-template-columns:repeat(3,42px);gap:4px;pointer-events:auto}.pad button,.act button{width:42px;height:42px;border-radius:9px;border:1px solid #77a7d4;background:#0c1a30dd;color:white;font-weight:900}
+.act{display:grid;grid-template-columns:repeat(2,42px);gap:5px;pointer-events:auto}
+#restart{position:absolute;top:15px;right:15px;z-index:2;border:1px solid #6685a9;background:#0b1428dd;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer}
+@media(max-width:650px){#mobile{display:flex}#controls{display:none}#bottom{bottom:8px;gap:5px}.ability{min-width:65px;min-height:49px;font-size:10px;padding:5px 2px}.ability small{font-size:8px}.fighter{padding:8px}.name{font-size:13px}.sub{font-size:9px}#hud{top:58px}}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="top" class="panel"><div class="logo">HERO CLASH <span style="color:#fff">3D</span></div><div class="stage" id="stage">USJ TRAINING ARENA</div><div class="stage">PLAYER VS VILLAIN</div></div>
+<div id="hud">
+ <div class="fighter panel"><div class="name" id="playerName">HERO</div><div class="sub">PLAYER 1</div><div class="bar"><div class="fill" id="playerHealth"></div></div><div class="ultbar"><div class="ultfill" id="playerUlt"></div></div></div>
+ <div class="fighter right panel"><div class="name" id="enemyName">VILLAIN</div><div class="sub">CPU OPPONENT</div><div class="bar"><div class="fill" id="enemyHealth"></div></div><div class="ultbar"><div class="ultfill" id="enemyUlt"></div></div></div>
+</div>
+<div id="centerInfo"></div>
+<div id="controls">MOVE: WASD / ARROWS &nbsp; • &nbsp; DODGE: SHIFT &nbsp; • &nbsp; ATTACK: 1–4 &nbsp; • &nbsp; ULTIMATE: 5–8</div>
+<div id="mobile"><div class="pad"><span></span><button data-move="forward">▲</button><span></span><button data-move="left">◀</button><button data-move="back">▼</button><button data-move="right">▶</button></div><div class="act"><button data-ability="0">1</button><button data-ability="1">2</button><button data-ability="2">3</button><button data-ability="3">4</button></div></div>
+<div id="bottom" class="panel"></div>
+<button id="restart" onclick="showSelect()">CHARACTER SELECT</button>
+<div id="select"><div id="selectBox" class="panel"><h1>HERO CLASH 3D</h1><div class="intro">Choose your hero. Then take down the villain in a 3D arena.</div><div id="roster"></div><button id="start" disabled>SELECT A HERO</button><div class="intro">8 abilities per hero • 4 normal skills • 4 ultimate skills • keyboard + mobile controls</div></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+<script>
+const heroes=[
+{name:"DEKU",emoji:"💚",color:0x20d98a,role:"One For All",normal:[["Delaware Smash",18],["Shoot Style",16],["Blackwhip",22],["Air Force",20]],ult:[["Detroit Smash",35],["Full Cowling",30],["Manchester Smash",38],["United States of Smash",48]]},
+{name:"BAKUGO",emoji:"💥",color:0xff7b24,role:"Explosion",normal:[["AP Shot",20],["Blast Rush",17],["Stun Grenade",19],["Howitzer Feint",23]],ult:[["Howitzer Impact",38],["Cluster",34],["爆速 Burst",40],["Great Explosion Murder",48]]},
+{name:"SHOTO",emoji:"❄️",color:0x55cfff,role:"Half-Cold Half-Hot",normal:[["Ice Wall",18],["Flashfire Fist",20],["Heaven-Piercing Ice Wall",22],["Flame Wave",18]],ult:[["Flashfreeze Heatwave",38],["Phosphor",34],["Great Glacial Aegir",42],["Prominence Burst",48]]},
+{name:"ALL MIGHT",emoji:"⭐",color:0xffd34e,role:"One For All",normal:[["Texas Smash",20],["Missouri Smash",18],["Carolina Smash",22],["New Hampshire Smash",24]],ult:[["Detroit Smash",36],["United States of Smash",48],["Oklahoma Smash",40],["Plus Ultra",50]]},
+{name:"AIZAWA",emoji:"🖤",color:0x9b83ff,role:"Erasure",normal:[["Capture Scarf",18],["Erasure",14],["Drop Kick",20],["Binding Toss",22]],ult:[["Erasure Lock",30],["Meteor Fist",34],["Scarf Cyclone",40],["Underground Ambush",44]]},
+{name:"KIRISHIMA",emoji:"🪨",color:0xe94a4a,role:"Hardening",normal:[["Red Counter",17],["Hard Rush",18],["Unbreakable Guard",12],["Shoulder Charge",22]],ult:[["Red Riot Unbreakable",38],["Crimson Riot",36],["Hard Impact",42],["Manly Smash",46]]}
+];
+const villains=[{name:"NOMU",emoji:"👹",color:0x573f8c,hp:1200},{name:"SHIGARAKI",emoji:"☠️",color:0x9c9caa,hp:1100},{name:"DABI",emoji:"🔥",color:0x277edb,hp:1050},{name:"ALL FOR ONE",emoji:"👁️",color:0x7c315d,hp:1400}];
+let selected=null,scene,camera,renderer,clock,player,enemy,playerMesh,enemyMesh,keys={},cooldowns=[0,0,0,0,0,0,0,0],playerHP=1000,enemyHP=1200,ult=0,enemyUlt=0,gameOn=false,attackFX=[],lastEnemyAttack=0,moveVector={x:0,z:0},touchMoves={};
+const $=id=>document.getElementById(id);
+function buildRoster(){const r=$("roster");heroes.forEach((h,i)=>{let b=document.createElement("button");b.className="char";b.innerHTML=`<div class="portrait">${h.emoji}</div><b>${h.name}</b><small>${h.role}</small>`;b.onclick=()=>{selected=i;document.querySelectorAll(".char").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");$("start").disabled=false;$("start").textContent="ENTER THE ARENA"};r.appendChild(b)});$("start").onclick=()=>{if(selected!==null)startGame()}}
+buildRoster();
+function init3D(){
+scene=new THREE.Scene();scene.background=new THREE.Color(0x080e20);scene.fog=new THREE.Fog(0x080e20,22,60);
+camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);camera.position.set(0,10,17);camera.lookAt(0,1,0);
+renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;$("game").appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0x9bcaff,0x171326,2));let light=new THREE.DirectionalLight(0xffffff,2.4);light.position.set(-5,12,7);light.castShadow=true;scene.add(light);
+let floor=new THREE.Mesh(new THREE.CylinderGeometry(13,13,.5,64),new THREE.MeshStandardMaterial({color:0x18243b,metalness:.35,roughness:.7}));floor.position.y=-.3;floor.receiveShadow=true;scene.add(floor);
+let ring=new THREE.Mesh(new THREE.TorusGeometry(11.5,.09,8,100),new THREE.MeshBasicMaterial({color:0x19dfff}));ring.rotation.x=Math.PI/2;ring.position.y=-.02;scene.add(ring);
+for(let i=0;i<16;i++){let a=i*Math.PI/8;let p=new THREE.Mesh(new THREE.BoxGeometry(.35,2.5,.35),new THREE.MeshStandardMaterial({color:i%2?0x223e69:0x39265e,emissive:0x07142b}));p.position.set(Math.cos(a)*12,1.1,Math.sin(a)*12);scene.add(p)}
+for(let i=0;i<30;i++){let g=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.07),new THREE.MeshBasicMaterial({color:0x41dfff}));g.position.set((Math.random()-.5)*25,Math.random()*7-1,(Math.random()-.5)*25);scene.add(g)}
+clock=new THREE.Clock();window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});animate();
+}
+function makeFighter(color,x,enemySide=false){
+let group=new THREE.Group();let mat=new THREE.MeshStandardMaterial({color,roughness:.55,metalness:.12});
+let dark=new THREE.MeshStandardMaterial({color:0x172033});let skin=new THREE.MeshStandardMaterial({color:enemySide?0x777080:0xf0c49e});
+function part(geo,m,pos){let o=new THREE.Mesh(geo,m);o.position.set(...pos);o.castShadow=true;group.add(o);return o}
+part(new THREE.CylinderGeometry(.34,.43,.9,12),mat,[0,1.2,0]);
+part(new THREE.SphereGeometry(.32,16,12),skin,[0,1.92,0]);
+part(new THREE.BoxGeometry(.5,.18,.35),dark,[0,2.16,0]);
+let arm1=part(new THREE.CapsuleGeometry(.13,.55,4,8),mat,[-.48,1.25,0]);arm1.rotation.z=-.35;
+let arm2=part(new THREE.CapsuleGeometry(.13,.55,4,8),mat,[.48,1.25,0]);arm2.rotation.z=.35;
+let leg1=part(new THREE.CapsuleGeometry(.16,.55,4,8),dark,[-.2,.48,0]);let leg2=part(new THREE.CapsuleGeometry(.16,.55,4,8),dark,[.2,.48,0]);
+group.position.set(x,0,0);group.userData={arm1,arm2,leg1,leg2,baseColor:color};scene.add(group);return group;
+}
+function startGame(){
+$("select").style.display="none";if(!scene)init3D();
+scene.children.filter(o=>o.userData.fighter).forEach(o=>scene.remove(o));
+const h=heroes[selected],v=villains[Math.floor(Math.random()*villains.length)];
+playerMesh=makeFighter(h.color,-3);enemyMesh=makeFighter(v.color,3,true);playerMesh.userData.fighter=true;enemyMesh.userData.fighter=true;
+playerHP=1000;enemyHP=v.hp;ult=0;enemyUlt=0;cooldowns.fill(0);gameOn=true;
+$("playerName").textContent=h.name;$("enemyName").textContent=v.name;$("stage").textContent="USJ TRAINING ARENA";
+$("enemyHealth").style.width="100%";$("playerHealth").style.width="100%";$("playerUlt").style.width="0%";$("enemyUlt").style.width="0%";
+makeAbilities();showMessage("FIGHT!",1000);updateHUD();
+}
+function makeAbilities(){let b=$("bottom");b.innerHTML="";let h=heroes[selected];h.normal.forEach((a,i)=>b.appendChild(abilityButton(a,i,false)));h.ult.forEach((a,i)=>b.appendChild(abilityButton(a,i+4,true)))}
+function abilityButton(a,i,isUlt){let b=document.createElement("button");b.className="ability"+(isUlt?" ult":"");b.innerHTML=`<span class="key">${i<4?i+1:i+1}</span>${a[0]}<small>${isUlt?"ULTIMATE • "+a[1]+" DMG":"NORMAL • "+a[1]+" DMG"}</small>`;b.onclick=()=>useAbility(i);return b}
+function showMessage(t,d=700){let el=$("centerInfo");el.textContent=t;el.style.opacity=1;clearTimeout(showMessage.timer);showMessage.timer=setTimeout(()=>el.style.opacity=0,d)}
+function updateHUD(){$("playerHealth").style.width=Math.max(0,playerHP/1000*100)+"%";$("enemyHealth").style.width=Math.max(0,enemyHP/(villains.find(v=>v.name===$("enemyName").textContent)?.hp||1200)*100)+"%";$("playerUlt").style.width=ult+"%";$("enemyUlt").style.width=enemyUlt+"%"}
+function useAbility(i){if(!gameOn||cooldowns[i]>0)return;if(i>=4&&ult<100){showMessage("ULTIMATE NEEDS 100% CHARGE");return}
+let a=heroes[selected][i<4?"normal":"ult"][i%4],damage=a[1];if(i>=4){ult=0;showMessage("PLUS ULTRA!!",900)}else{ult=Math.min(100,ult+12);showMessage(a[0],500)}
+cooldowns[i]=i>=4?7:1.1;
+let dist=playerMesh.position.distanceTo(enemyMesh.position);if(dist<8||i===2||i===3){enemyHP-=damage*2.3;enemyMesh.position.x+=playerMesh.position.x<enemyMesh.position.x?-.35:.35;spawnBurst(enemyMesh.position,heroes[selected].color)}else showMessage("TOO FAR!",500);
+updateHUD();if(enemyHP<=0)finish(true)}
+function spawnBurst(pos,color){let m=new THREE.Mesh(new THREE.IcosahedronGeometry(.5,1),new THREE.MeshBasicMaterial({color,wireframe:true}));m.position.copy(pos);m.position.y+=1;scene.add(m);attackFX.push({mesh:m,life:.45})}
+function finish(win){gameOn=false;showMessage(win?"VICTORY!":"DEFEAT!",4000);setTimeout(()=>{if(!gameOn)showSelect()},2600)}
+function showSelect(){gameOn=false;$("select").style.display="flex"}
+function animate(){requestAnimationFrame(animate);if(!renderer)return;let dt=Math.min(clock.getDelta(),.04);if(gameOn&&playerMesh&&enemyMesh){
+let dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0)+(touchMoves.right?1:0)-(touchMoves.left?1:0);
+let dz=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0)+(touchMoves.back?1:0)-(touchMoves.forward?1:0);
+let len=Math.hypot(dx,dz)||1;playerMesh.position.x=THREE.MathUtils.clamp(playerMesh.position.x+dx/len*dt*5,-9,9);playerMesh.position.z=THREE.MathUtils.clamp(playerMesh.position.z+dz/len*dt*5,-7,7);
+playerMesh.rotation.y=Math.atan2(enemyMesh.position.x-playerMesh.position.x,enemyMesh.position.z-playerMesh.position.z);
+enemyMesh.rotation.y=Math.atan2(playerMesh.position.x-enemyMesh.position.x,playerMesh.position.z-enemyMesh.position.z);
+let d=playerMesh.position.distanceTo(enemyMesh.position);if(d>2.2){enemyMesh.position.x+=(playerMesh.position.x-enemyMesh.position.x)/d*dt*1.5;enemyMesh.position.z+=(playerMesh.position.z-enemyMesh.position.z)/d*dt*1.5}
+lastEnemyAttack+=dt;if(lastEnemyAttack>1.5&&d<2.8){lastEnemyAttack=0;playerHP-=8+Math.random()*8;enemyUlt=Math.min(100,enemyUlt+10);if(playerHP<=0)finish(false);updateHUD()}
+for(let i=0;i<8;i++)cooldowns[i]=Math.max(0,cooldowns[i]-dt);
+attackFX=attackFX.filter(f=>{f.life-=dt;f.mesh.scale.multiplyScalar(1+dt*4);f.mesh.material.opacity=f.life/.45;if(f.life<=0){scene.remove(f.mesh);return false}return true});
+camera.position.x+=(playerMesh.position.x*.22-camera.position.x)*dt*1.5;camera.position.z+=(17-camera.position.z)*dt*1.5;camera.lookAt(0,1,0);
+}
+if(playerMesh&&enemyMesh){playerMesh.position.y=Math.sin(performance.now()*.004)*.025;enemyMesh.position.y=Math.sin(performance.now()*.004+1)*.025}
+renderer.render(scene,camera)}
+window.addEventListener("keydown",e=>{keys[e.key]=true;if(e.key>="1"&&e.key<="8")useAbility(Number(e.key)-1);if(e.key==="Shift")playerMesh&&(playerMesh.position.x+=playerMesh.position.x<enemyMesh.position.x?-.8:.8)});
+window.addEventListener("keyup",e=>keys[e.key]=false);
+document.querySelectorAll("[data-move]").forEach(b=>{let k=b.dataset.move;b.addEventListener("pointerdown",e=>{e.preventDefault();touchMoves[k]=true});["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,()=>touchMoves[k]=false))});
+document.querySelectorAll("[data-ability]").forEach(b=>b.addEventListener("click",()=>useAbility(Number(b.dataset.ability))));
+</script>
+</body>
+</html>
